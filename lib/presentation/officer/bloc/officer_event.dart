@@ -27,3 +27,10 @@ class ShowAlertEvent extends OfficerEvent {
   final String incidentId;
   const ShowAlertEvent({required this.message, required this.incidentId});
 }
+
+class AssignIncidentEvent extends OfficerEvent {
+  final String incidentId;
+  const AssignIncidentEvent(this.incidentId);
+  @override
+  List<Object?> get props => [incidentId];
+}

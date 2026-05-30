@@ -3,13 +3,24 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_text_styles.dart';
 import '../../../data/models/incident_model.dart';
-import '../../../data/models/unit_model.dart';
 import '../../shared/widgets/priority_badge.dart';
 import '../bloc/officer_bloc.dart';
+import '../bloc/officer_event.dart';
 import '../bloc/officer_state.dart';
 
-class OfficerDashboardScreen extends StatelessWidget {
+class OfficerDashboardScreen extends StatefulWidget {
   const OfficerDashboardScreen({super.key});
+
+  @override
+  State<OfficerDashboardScreen> createState() => _OfficerDashboardScreenState();
+}
+
+class _OfficerDashboardScreenState extends State<OfficerDashboardScreen> {
+  @override
+  void initState() {
+    super.initState();
+    context.read<OfficerBloc>().add(LoadOfficerDataEvent());
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -32,8 +43,8 @@ class OfficerDashboardScreen extends StatelessWidget {
                   const SizedBox(width: 12),
                   _StatChip(
                     label: 'REPORTS ON QUEUE',
-                    value: '0',
-                    badge: 'Low Load',
+                    value: '${state.incidents.length}',
+                    badge: state.incidents.isEmpty ? 'No Reports' : null,
                     icon: Icons.assignment_outlined,
                     iconColor: AppColors.high,
                   ),
@@ -63,12 +74,32 @@ class OfficerDashboardScreen extends StatelessWidget {
               ),
               const SizedBox(height: 12),
               Expanded(
-                child: ListView.separated(
-                  itemCount: state.incidents.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 10),
-                  itemBuilder: (ctx, i) =>
-                      _IncidentCard(incident: state.incidents[i]),
-                ),
+                child: state.incidents.isEmpty
+                    ? Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.assignment_outlined,
+                                color: AppColors.textMuted, size: 52),
+                            const SizedBox(height: 16),
+                            Text('No citizen reports yet',
+                                style: AppTextStyles.headlineSmall
+                                    .copyWith(color: AppColors.textSecondary)),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Reports submitted by citizens will appear here',
+                              style: AppTextStyles.bodySmall,
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
+                        ),
+                      )
+                    : ListView.separated(
+                        itemCount: state.incidents.length,
+                        separatorBuilder: (_, _) => const SizedBox(height: 10),
+                        itemBuilder: (ctx, i) =>
+                            _IncidentCard(incident: state.incidents[i]),
+                      ),
               ),
             ],
           ),
@@ -134,7 +165,7 @@ class _StatChip extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(
                         horizontal: 6, vertical: 2),
                     decoration: BoxDecoration(
-                      color: AppColors.medium.withOpacity(0.15),
+                      color: AppColors.medium.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text(badge!,
@@ -181,7 +212,7 @@ class _IncidentCard extends StatelessWidget {
                   child: Icon(
                     _getIcon(incident.title),
                     size: 40,
-                    color: AppColors.textMuted.withOpacity(0.4),
+                    color: AppColors.textMuted.withValues(alpha: 0.4),
                   ),
                 ),
                 Positioned(
@@ -216,6 +247,35 @@ class _IncidentCard extends StatelessWidget {
                         style: AppTextStyles.bodySmall
                             .copyWith(color: AppColors.medium)),
                   ],
+                ),
+                const SizedBox(height: 10),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      context
+                          .read<OfficerBloc>()
+                          .add(AssignIncidentEvent(incident.id));
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                              'Report #${incident.id} assigned to officer'),
+                          backgroundColor: AppColors.primary,
+                          duration: const Duration(seconds: 2),
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.assignment_ind_outlined, size: 16),
+                    label: const Text('ASSIGN TO OFFICER',
+                        style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 1)),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                    ),
+                  ),
                 ),
               ],
             ),
